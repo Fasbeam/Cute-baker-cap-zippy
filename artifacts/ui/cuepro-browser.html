@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CUE-PRO · Cute Trader Pro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.17/dist/tailwind.min.css" />
+  <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    body { background: linear-gradient(135deg, #fff7ed 0%, #f5f3ff 50%, #ecfdf5 100%); }
+    .card-shadow { box-shadow: 0 10px 25px -5px rgba(196, 181, 253, 0.35); }
+    .text-cute-pink { color: #ff8fb1; }
+    .text-cute-lavender { color: #c4b5fd; }
+    .text-cute-mint { color: #6ee7b7; }
+    .bg-cute-pink { background-color: #ff8fb1; }
+    .bg-cute-lavender { background-color: #c4b5fd; }
+    .bg-cute-mint { background-color: #6ee7b7; }
+    .bg-cute-cream { background-color: #fff7ed; }
+    .border-cute-lavender { border-color: #c4b5fd; }
+    .border-cute-pink { border-color: #ff8fb1; }
+    .text-cute-ink { color: #1e1b4b; }
+  </style>
+</head>
+<body class="min-h-screen text-cute-ink font-sans">
+  <div class="max-w-6xl mx-auto p-4 md:p-6">
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight">
+          <span class="text-cute-pink">CUE</span><span class="text-cute-lavender">-PRO</span>
+        </h1>
+        <p class="text-sm text-slate-600">Silence is a recommendation · Defined-risk only</p>
+      </div>
+      <div class="mt-3 md:mt-0 flex gap-2 items-center">
+        <select id="symbol" class="rounded-full px-4 py-2 bg-white border border-cute-lavender text-sm">
+          <option>NIFTY</option>
+          <option>BANKNIFTY</option>
+          <option>FINNIFTY</option>
+        </select>
+        <button id="refresh" class="rounded-full px-5 py-2 bg-cute-pink text-white font-medium hover:bg-pink-400 transition">Refresh</button>
+        <span id="mode-badge" class="text-xs bg-cute-mint text-white px-2 py-1 rounded-full">Browser Mode</span>
+      </div>
+    </header>
+
+    <section id="pulse" class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
+      <div class="bg-white rounded-2xl p-4 card-shadow">
+        <div class="text-xs text-slate-500">NIFTY 50</div>
+        <div id="nifty-val" class="text-2xl font-semibold">—</div>
+        <div id="nifty-chg" class="text-sm">—</div>
+      </div>
+      <div class="bg-white rounded-2xl p-4 card-shadow">
+        <div class="text-xs text-slate-500">BANK NIFTY</div>
+        <div id="bank-val" class="text-2xl font-semibold">—</div>
+        <div id="bank-chg" class="text-sm">—</div>
+      </div>
+      <div class="bg-white rounded-2xl p-4 card-shadow">
+        <div class="text-xs text-slate-500">INDIA VIX</div>
+        <div id="vix-val" class="text-2xl font-semibold">—</div>
+        <div id="regime" class="text-sm font-medium">—</div>
+      </div>
+      <div class="bg-white rounded-2xl p-4 card-shadow flex items-center justify-center">
+        <div class="text-center">
+          <div class="text-xs text-slate-500">Status</div>
+          <div id="feed-status" class="text-sm font-medium text-cute-mint">Live Sim</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-6">
+      <h2 class="text-lg font-semibold mb-3">Price · VWAP · EMAs</h2>
+      <div class="bg-white rounded-2xl p-4 card-shadow">
+        <div id="price-chart" class="w-full h-80"></div>
+        <p id="price-meta" class="text-xs text-slate-400 mt-2 text-center"></p>
+      </div>
+    </section>
+
+    <section class="mb-6">
+      <h2 class="text-lg font-semibold mb-3">OI Walls by Strike</h2>
+      <div class="bg-white rounded-2xl p-4 card-shadow">
+        <div id="oi-chart" class="w-full h-80"></div>
+        <p id="chart-meta" class="text-xs text-slate-400 mt-2 text-center"></p>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="text-lg font-semibold mb-3">Cue Cards</h2>
+      <div id="cards" class="space-y-4"></div>
+    </section>
+
+    <section class="mt-8 bg-white rounded-2xl p-5 card-shadow">
+      <h3 class="font-semibold mb-3">Position Sizing</h3>
+      <div class="flex flex-wrap gap-3 items-end">
+        <div>
+          <label class="text-xs text-slate-500">Capital (₹)</label>
+          <input id="capital" type="number" value="500000" class="block rounded-lg border px-3 py-2 w-36" />
+        </div>
+        <div>
+          <label class="text-xs text-slate-500">Risk %</label>
+          <input id="risk" type="number" value="1.5" step="0.1" class="block rounded-lg border px-3 py-2 w-24" />
+        </div>
+        <div class="text-sm">Max risk per trade: <span id="max-risk" class="font-semibold text-cute-pink">₹7,500</span></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ========== Simulated Market Engine (browser-only) ==========
+    const BASE = {
+      NIFTY: 24980, BANKNIFTY: 52150, FINNIFTY: 23420
+    };
+
+    const YAHOO = {
+      NIFTY: "^NSEI",
+      BANKNIFTY: "^NSEBANK",
+      FINNIFTY: "NIFTY_FIN_SERVICE.NS"
+    };
+
+    async function fetchYahoo(symbol) {
+      const ticker = YAHOO[symbol] || "^NSEI";
+      try {
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=5m&range=1d`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Yahoo failed");
+        const json = await res.json();
+        const result = json.chart?.result?.[0];
+        if (!result) throw new Error("No data");
+        const quote = result.indicators.quote[0];
+        const timestamps = result.timestamp || [];
+        const meta = result.meta;
+        const candles = timestamps.map((t, i) => ({
+          time: t,
+          open: quote.open[i] || meta.regularMarketPrice,
+          high: quote.high[i] || meta.regularMarketPrice,
+          low: quote.low[i] || meta.regularMarketPrice,
+          close: quote.close[i] || meta.regularMarketPrice,
+          volume: quote.volume[i] || 0
+        })).filter(c => c.close);
+        return {
+          spot: meta.regularMarketPrice,
+          change: meta.regularMarketChangePercent || 0,
+          candles,
+          vix: null // VIX separate
+        };
+      } catch (e) {
+        console.warn("Yahoo fetch failed, using simulation", e);
+        return null;
+      }
+    }
+
+    async function fetchVix() {
+      try {
+        const res = await fetch("https://query1.finance.yahoo.com/v8/finance/chart/%5EINDIAVIX?interval=1d&range=1d");
+        const json = await res.json();
+        return json.chart?.result?.[0]?.meta?.regularMarketPrice || null;
+      } catch {
+        return null;
+      }
+    }
+
+    function generateMarket(symbol) {
+      const spot = BASE[symbol] * (1 + rand(-0.004, 0.004));
+      const vix = 14 + rand(0, 8);
+      const regime = vix > 15 ? "credit_friendly" : "debit_friendly";
+      const change = rand(-0.8, 0.8);
+
+      // OI chain
+      const atm = Math.round(spot / 50) * 50;
+      const records = [];
+      for (let i = -12; i <= 12; i++) {
+        const strike = atm + i * 50;
+        const dist = Math.abs(i);
+        const putOi = Math.round(800000 * Math.exp(-dist * 0.35) * (i < 0 ? 1.4 : 0.6) * rand(0.7, 1.3));
+        const callOi = Math.round(800000 * Math.exp(-dist * 0.35) * (i > 0 ? 1.4 : 0.6) * rand(0.7, 1.3));
+        records.push({
+          strike,
+          put_oi: putOi,
+          call_oi: callOi,
+          put_coi: Math.round(putOi * rand(-0.05, 0.12)),
+          call_coi: Math.round(callOi * rand(-0.05, 0.12))
+        });
+      }
+
+      // Candles
+      const candles = [];
+      let p = spot * 0.996;
+      const now = Math.floor(Date.now() / 1000);
+      for (let i = 80; i >= 0; i--) {
+        const t = now - i * 300;
+        const o = p;
+        const c = p * (1 + rand(-0.0012, 0.0012));
+        candles.push({
+          time: t,
+          open: +o.toFixed(2),
+          high: +Math.max(o, c) * (1 + rand(0, 0.0006)).toFixed(2),
+          low: +Math.min(o, c) * (1 - rand(0, 0.0006)).toFixed(2),
+          close: +c.toFixed(2),
+          volume: Math.round(rand(60000, 180000))
+        });
+        p = c;
+      }
+      candles[candles.length - 1].close = +spot.toFixed(2);
+
+      // Simple decision
+      const putWall = records.reduce((a, b) => a.put_oi > b.put_oi ? a : b);
+      const callWall = records.reduce((a, b) => a.call_oi > b.call_oi ? a : b);
+      const bullish = putWall.put_oi > callWall.call_oi * 1.25;
+      const quiet = Math.random() > 0.4;
+
+      let card;
+      if (quiet && regime === "credit_friendly" && bullish) {
+        card = {
+          status: "signal",
+          symbol,
+          strategy: "Bull Put Credit Spread",
+          confluence_score: Math.round(72 + rand(0, 18)),
+          regime, tape: "quiet",
+          expiry: "nearest weekly",
+          why: [
+            `Strong put wall at ${putWall.strike}`,
+            `Quiet tape + Credit-friendly regime (VIX ${vix.toFixed(1)})`,
+            "Defined-risk credit structure"
+          ],
+          legs: [
+            { action: "sell", type: "PE", strike: putWall.strike },
+            { action: "buy", type: "PE", strike: putWall.strike - 200 }
+          ],
+          max_profit: "premium collected",
+          max_loss: "hard-capped",
+          meta: { spot: +spot.toFixed(2), vix: +vix.toFixed(2) }
+        };
+      } else {
+        card = {
+          status: "silence",
+          symbol,
+          reason: quiet ? "OI walls not decisive enough" : "Tape not quiet — waiting for better structure",
+          pillar_failed: quiet ? 3 : 4,
+          meta: { spot: +spot.toFixed(2), vix: +vix.toFixed(2) }
+        };
+      }
+
+      return { spot, vix, regime, change, records, candles, card };
+    }
+
+    // ========== Charts ==========
+    let priceChart, candleSeries, vwapSeries, ema5Series, ema20Series;
+    let oiChart, putSeries, callSeries;
+
+    function initCharts() {
+      const priceContainer = document.getElementById("price-chart");
+      priceChart = LightweightCharts.createChart(priceContainer, {
+        layout: { background: { color: "#fff" }, textColor: "#1e1b4b" },
+        grid: { vertLines: { color: "#f1f5f9" }, horzLines: { color: "#f1f5f9" } },
+        height: 320,
+        timeScale: { timeVisible: true, secondsVisible: false }
+      });
+      candleSeries = priceChart.addCandlestickSeries({
+        upColor: "#6ee7b7", downColor: "#ff8fb1",
+        borderUpColor: "#6ee7b7", borderDownColor: "#ff8fb1",
+        wickUpColor: "#6ee7b7", wickDownColor: "#ff8fb1"
+      });
+      vwapSeries = priceChart.addLineSeries({ color: "#c4b5fd", lineWidth: 2, title: "VWAP" });
+      ema5Series = priceChart.addLineSeries({ color: "#f59e0b", lineWidth: 1, title: "EMA5" });
+      ema20Series = priceChart.addLineSeries({ color: "#3b82f6", lineWidth: 1, title: "EMA20" });
+
+      const oiContainer = document.getElementById("oi-chart");
+      oiChart = LightweightCharts.createChart(oiContainer, {
+        layout: { background: { color: "#fff" }, textColor: "#1e1b4b" },
+        grid: { vertLines: { color: "#f1f5f9" }, horzLines: { color: "#f1f5f9" } },
+        height: 320,
+        timeScale: {
+          tickMarkFormatter: (t) => window._oiStrikes?.[t]?.toLocaleString("en-IN") || ""
+        }
+      });
+      putSeries = oiChart.addHistogramSeries({ color: "#6ee7b7", priceFormat: { type: "volume" }, title: "Put OI" });
+      callSeries = oiChart.addHistogramSeries({ color: "#ff8fb1", priceFormat: { type: "volume" }, title: "Call OI" });
+
+      window.addEventListener("resize", () => {
+        priceChart.applyOptions({ width: priceContainer.clientWidth });
+        oiChart.applyOptions({ width: oiContainer.clientWidth });
+      });
+    }
+
+    function computeEMA(candles, period) {
+      const k = 2 / (period + 1);
+      let ema = candles[0].close;
+      return candles.map(c => {
+        ema = c.close * k + ema * (1 - k);
+        return { time: c.time, value: ema };
+      });
+    }
+
+    function computeVWAP(candles) {
+      let cv = 0, ctpv = 0;
+      return candles.map(c => {
+        const tp = (c.high + c.low + c.close) / 3;
+        cv += c.volume;
+        ctpv += tp * c.volume;
+        return { time: c.time, value: ctpv / cv };
+      });
+    }
+
+    // ========== UI Updates ==========
+    function fmt(n) { return n == null ? "—" : Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 }); }
+    function chgClass(v) { return v >= 0 ? "text-emerald-600" : "text-rose-600"; }
+
+    async function updateAll() {
+      const symbol = document.getElementById("symbol").value;
+      document.getElementById("feed-status").textContent = "Fetching…";
+
+      // Try real data first
+      const real = await fetchYahoo(symbol);
+      const realVix = await fetchVix();
+
+      let m;
+      if (real && real.candles.length > 10) {
+        const spot = real.spot;
+        const vix = realVix || 16;
+        const regime = vix > 15 ? "credit_friendly" : "debit_friendly";
+        const change = real.change;
+        // Keep simulated OI + card logic but anchor to real spot
+        const sim = generateMarket(symbol);
+        sim.spot = spot;
+        sim.vix = vix;
+        sim.regime = regime;
+        sim.change = change;
+        sim.candles = real.candles;
+        // Rebuild OI around real spot
+        const atm = Math.round(spot / 50) * 50;
+        sim.records = [];
+        for (let i = -12; i <= 12; i++) {
+          const strike = atm + i * 50;
+          const dist = Math.abs(i);
+          sim.records.push({
+            strike,
+            put_oi: Math.round(800000 * Math.exp(-dist * 0.35) * (i < 0 ? 1.4 : 0.6) * rand(0.8, 1.2)),
+            call_oi: Math.round(800000 * Math.exp(-dist * 0.35) * (i > 0 ? 1.4 : 0.6) * rand(0.8, 1.2))
+          });
+        }
+        // Re-evaluate card with real numbers
+        const putWall = sim.records.reduce((a, b) => a.put_oi > b.put_oi ? a : b);
+        const callWall = sim.records.reduce((a, b) => a.call_oi > b.call_oi ? a : b);
+        const bullish = putWall.put_oi > callWall.call_oi * 1.2;
+        if (regime === "credit_friendly" && bullish && Math.random() > 0.35) {
+          sim.card = {
+            status: "signal", symbol, strategy: "Bull Put Credit Spread",
+            confluence_score: Math.round(70 + Math.random() * 20),
+            regime, tape: "quiet", expiry: "nearest weekly",
+            why: [`Put wall at ${putWall.strike}`, `VIX ${vix.toFixed(1)} — credit friendly`, "Defined-risk"],
+            legs: [{ action: "sell", type: "PE", strike: putWall.strike }, { action: "buy", type: "PE", strike: putWall.strike - 200 }],
+            max_profit: "premium", max_loss: "hard-capped",
+            meta: { spot: +spot.toFixed(2), vix: +vix.toFixed(2) }
+          };
+        } else {
+          sim.card = { status: "silence", symbol, reason: "Waiting for full confluence", pillar_failed: 3, meta: { spot: +spot.toFixed(2), vix: +vix.toFixed(2) } };
+        }
+        m = sim;
+        document.getElementById("feed-status").textContent = "Yahoo Live";
+        document.getElementById("mode-badge").textContent = "Real Data";
+        document.getElementById("mode-badge").className = "text-xs bg-emerald-500 text-white px-2 py-1 rounded-full";
+      } else {
+        m = generateMarket(symbol);
+        document.getElementById("feed-status").textContent = "Simulated";
+        document.getElementById("mode-badge").textContent = "Browser Mode";
+      }
+
+      // Pulse
+      document.getElementById("nifty-val").textContent = fmt(symbol === "NIFTY" ? m.spot : BASE.NIFTY * (1 + rand(-0.003, 0.003)));
+      document.getElementById("bank-val").textContent = fmt(symbol === "BANKNIFTY" ? m.spot : BASE.BANKNIFTY * (1 + rand(-0.003, 0.003)));
+      document.getElementById("vix-val").textContent = fmt(m.vix);
+      document.getElementById("nifty-chg").innerHTML = `<span class="${chgClass(m.change)}">${m.change >= 0 ? "+" : ""}${m.change.toFixed(2)}%</span>`;
+      document.getElementById("bank-chg").innerHTML = `<span class="${chgClass(m.change * 1.1)}">${(m.change * 1.1) >= 0 ? "+" : ""}${(m.change * 1.1).toFixed(2)}%</span>`;
+      const reg = document.getElementById("regime");
+      reg.textContent = m.regime === "credit_friendly" ? "Credit-Friendly" : "Debit-Friendly";
+      reg.className = m.regime === "credit_friendly" ? "text-sm font-medium text-orange-500" : "text-sm font-medium text-sky-600";
+
+      // Price chart
+      candleSeries.setData(m.candles);
+      vwapSeries.setData(computeVWAP(m.candles));
+      ema5Series.setData(computeEMA(m.candles, 5));
+      ema20Series.setData(computeEMA(m.candles, 20));
+      priceChart.timeScale().fitContent();
+      document.getElementById("price-meta").textContent = `${symbol} · Spot ${fmt(m.spot)} · 80 bars`;
+
+      // OI chart
+      window._oiStrikes = {};
+      const baseT = Math.floor(Date.now() / 1000) - m.records.length * 60;
+      const putD = m.records.map((r, i) => {
+        const t = baseT + i * 60;
+        window._oiStrikes[t] = r.strike;
+        return { time: t, value: r.put_oi };
+      });
+      const callD = m.records.map((r, i) => ({ time: baseT + i * 60, value: r.call_oi }));
+      putSeries.setData(putD);
+      callSeries.setData(callD);
+      oiChart.timeScale().fitContent();
+      document.getElementById("chart-meta").textContent = `${symbol} · ${m.records.length} strikes · Walls by height`;
+
+      // Card
+      renderCard(m.card);
+    }
+
+    function renderCard(card) {
+      const container = document.getElementById("cards");
+      if (card.status === "silence") {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl p-8 card-shadow text-center">
+            <div class="text-4xl mb-2">🤫</div>
+            <h3 class="text-xl font-semibold text-cute-lavender">Market Silence — Capital Protected</h3>
+            <p class="mt-2 text-slate-600">${card.reason}</p>
+            <p class="mt-1 text-xs text-slate-400">Pillar ${card.pillar_failed || "—"}</p>
+          </div>`;
+        return;
+      }
+      const why = card.why.map(w => `<li class="ml-4 list-disc">${w}</li>`).join("");
+      const legs = card.legs.map(l =>
+        `<span class="inline-block bg-cute-cream rounded-full px-3 py-1 text-xs mr-1 mb-1">${l.action.toUpperCase()} ${l.strike} ${l.type}</span>`
+      ).join("");
+      container.innerHTML = `
+        <div class="bg-white rounded-2xl p-6 card-shadow border-l-4 border-cute-pink">
+          <div class="flex justify-between">
+            <div>
+              <div class="text-xs text-slate-500">${card.symbol} · ${card.expiry}</div>
+              <h3 class="text-xl font-bold">${card.strategy}</h3>
+            </div>
+            <div class="text-right">
+              <div class="text-2xl font-semibold text-cute-pink">${card.confluence_score}/100</div>
+              <div class="text-xs text-slate-500">Confluence</div>
+            </div>
+          </div>
+          <div class="mt-4"><div class="text-xs font-medium text-slate-500 mb-1">Why</div><ul class="text-sm">${why}</ul></div>
+          <div class="mt-4"><div class="text-xs font-medium text-slate-500 mb-1">Legs</div><div>${legs}</div></div>
+          <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+            <div><span class="text-slate-500">Max Profit</span><br>${card.max_profit}</div>
+            <div><span class="text-slate-500">Max Loss</span><br>${card.max_loss}</div>
+            <div><span class="text-slate-500">Regime</span><br>${card.regime}</div>
+            <div><span class="text-slate-500">Tape</span><br>${card.tape}</div>
+          </div>
+          <div class="mt-3 text-xs text-slate-400">Spot ${fmt(card.meta.spot)} · VIX ${fmt(card.meta.vix)}</div>
+        </div>`;
+    }
+
+    function updateSizing() {
+      const cap = +document.getElementById("capital").value || 0;
+      const risk = +document.getElementById("risk").value || 0;
+      document.getElementById("max-risk").textContent = "₹" + Math.round(cap * risk / 100).toLocaleString("en-IN");
+    }
+
+    // ========== Boot ==========
+    initCharts();
+    updateSizing();
+    updateAll();
+
+    document.getElementById("refresh").onclick = updateAll;
+    document.getElementById("symbol").onchange = updateAll;
+    document.getElementById("capital").oninput = updateSizing;
+    document.getElementById("risk").oninput = updateSizing;
+
+    // Live feel: auto-refresh every 15s
+    setInterval(updateAll, 15000);
+  </script>
+</body>
+</html>

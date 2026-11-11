@@ -1,0 +1,5 @@
+- Project: Cute Trader Pro / CUE-PRO – non-executing confluence engine for Indian markets (Nifty 200 + Index F&O) [2026-11-11]
+- Source: Shared Cue app + full CUE-PRO PRD (5-pillar engine, mandatory defined-risk, silence-is-a-recommendation) [2026-11-11]
+- PRD saved to artifacts/CUE-PRO-PRD.md
+- Browser-runnable standalone app created at artifacts/ui/cuepro-browser.html (simulated live data, charts, cards) [2026-11-11]
+- Core pillars: Time/Event Shield, VIX Regime, Institutional OI/Delivery (50%), RDX Price Action (30%), Multi-TF Confluence (20%) [2026-11-11]
