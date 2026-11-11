@@ -7,8 +7,8 @@
       "status": 200,
       "title": "CUE-PRO",
       "hasCanvas": true,
-      "bodyTextLen": 679,
-      "bodyTextHash": "ad105415aa89f6b2e4718a3c3e9a944c06d7c34b837353cca29dc4b6a3f9df91",
+      "bodyTextLen": 1037,
+      "bodyTextHash": "075d02baf4b1ff5ca01eb09a526b7b9956f4853c84ac34dfcd510fd3e2db6847",
       "bodyTextPrefix": "INDEX DESK CUE-PRO Silence is a recommendation. Cards stay defin",
       "horizontalOverflow": false,
       "consoleErrors": [],
@@ -21,8 +21,8 @@
       "status": 200,
       "title": "CUE-PRO",
       "hasCanvas": true,
-      "bodyTextLen": 679,
-      "bodyTextHash": "b34245d62c92efce0b2a7c8aa13af8687adf667d7923eca476198206cccc207a",
+      "bodyTextLen": 1037,
+      "bodyTextHash": "d413c8cfe48950f96def20d11425e3c169548026e25421e49e777554fe0db872",
       "bodyTextPrefix": "INDEX DESK CUE-PRO Silence is a recommendation. Cards stay defin",
       "horizontalOverflow": false,
       "consoleErrors": [],
@@ -30,10 +30,7 @@
       "screenshot": "/workspace/screenshots/app-builder-preview-build-mobile.png"
     }
   },
-  "brandWarnings": [
-    "BRAND WARNING: this looks like a game/canvas app but /workspace/public/og.jpg is missing. Games and visually rich apps must ship a custom 1200x630 share card built from the app's own art — the default og.grok.me placeholder card is not acceptable for them. You are not done: open /workspace/.grok/skills/og/SKILL.md and finish the brand-asset pass.",
-    "BRAND WARNING: this looks like a game/canvas app but src/lib/og/site.json is missing \"type\": \"x:game\". X uses og:type=x:game to present the unfurl as a game card — set it in /workspace/src/lib/og/site.json per /workspace/.grok/skills/og/SKILL.md. Do not invent x:type or overload twitter:card as the game signal."
-  ],
+  "brandWarnings": [],
   "authWarnings": [],
   "verdictFile": "/workspace/screenshots/app-builder-preview-build.json",
   "divergesFromBaseline": false,

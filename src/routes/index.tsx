@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { RefreshCw, Shield } from "lucide-react";
+import { AskPanel } from "@/components/ask-panel";
 import { OiChart, PriceChart } from "@/components/desk-charts";
+import { SwingBoard } from "@/components/swing-board";
 import { getMarket } from "@/lib/market.functions";
 import { SYMBOLS, parseSymbol, type SymbolId } from "@/lib/market";
 
@@ -155,6 +157,10 @@ function Desk() {
           </article>
         )}
       </section>
+
+      <AskPanel snapshot={snapshot} capital={capital} />
+
+      <SwingBoard capital={capital} />
 
       <section className="rounded-card border border-line bg-surface p-5">
         <h2 className="mb-3 text-lg font-medium">Position size</h2>

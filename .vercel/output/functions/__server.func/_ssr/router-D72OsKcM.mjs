@@ -4,7 +4,7 @@ import { n as TSS_SERVER_FUNCTION, r as getServerFnById, t as createServerFn } f
 import { a as parseSymbol } from "./market-JpPq8U5D.mjs";
 import { t as TriangleAlert } from "../_libs/lucide-react.mjs";
 import { a as union, i as string, n as number, r as object, t as literal } from "../_libs/zod.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-p5c2UMyN.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-D72OsKcM.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var __defProp = Object.defineProperty;
@@ -342,7 +342,7 @@ function PreviewHostBridge() {
 	}, [router]);
 	return null;
 }
-var styles_default = "/assets/styles-Cspp09Mq.css";
+var styles_default = "/assets/styles-c8nXffPZ.css";
 var APP_NAME = "CUE-PRO";
 var Route$1 = createRootRoute({
 	head: () => ({
@@ -409,7 +409,8 @@ var createSsrRpc = (functionId) => {
 	});
 };
 var getMarket = createServerFn({ method: "GET" }).validator((data) => ({ symbol: parseSymbol(data?.symbol) })).handler(createSsrRpc("6fdfbdff8b779cdd80db4492138674f9ab3498f6077332c5892ed94e3f737172"));
-var $$splitComponentImporter = () => import("./routes-DP2lj5Fd.mjs");
+var scanSwing = createServerFn({ method: "POST" }).validator((data) => ({ capital: Math.min(5e7, Math.max(1e4, Number(data?.capital) || 5e5)) })).handler(createSsrRpc("8bc26606b4781ecd9e32233bc42dbac16ee0f0ff8fafa2c3f66ef4e27fec1796"));
+var $$splitComponentImporter = () => import("./routes-6IC6NsD0.mjs");
 var Route = createFileRoute("/")({
 	validateSearch: (search) => ({ symbol: parseSymbol(search.symbol) }),
 	loaderDeps: ({ search }) => ({ symbol: search.symbol }),
@@ -432,4 +433,4 @@ function getRouter() {
 	});
 }
 //#endregion
-export { Route as n, router_exports as t };
+export { createSsrRpc as i, Route as n, scanSwing as r, router_exports as t };

@@ -1,14 +1,7 @@
-import { n as TSS_SERVER_FUNCTION, t as createServerFn } from "./ssr.mjs";
+import { t as createServerFn } from "./ssr.mjs";
+import { n as loadSwingScan, t as createServerRpc } from "./swing-scan.server-1fqy4bpQ.mjs";
 import { a as parseSymbol, i as modelChain, n as decide, r as fallbackSnapshot } from "./market-JpPq8U5D.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/market.functions-DwynLfDP.js
-var createServerRpc = (serverFnMeta, splitImportFn) => {
-	const url = "/_serverFn/" + serverFnMeta.id;
-	return Object.assign(splitImportFn, {
-		url,
-		serverFnMeta,
-		[TSS_SERVER_FUNCTION]: true
-	});
-};
+//#region node_modules/.nitro/vite/services/ssr/assets/market.functions-CbzjStja.js
 var TICKERS = {
 	NIFTY: "^NSEI",
 	BANKNIFTY: "^NSEBANK",
@@ -104,5 +97,11 @@ var getMarket_createServerFn_handler = createServerRpc({
 	filename: "src/lib/market.functions.ts"
 }, (opts) => getMarket.__executeServer(opts));
 var getMarket = createServerFn({ method: "GET" }).validator((data) => ({ symbol: parseSymbol(data?.symbol) })).handler(getMarket_createServerFn_handler, async ({ data }) => loadMarket(data.symbol));
+var scanSwing_createServerFn_handler = createServerRpc({
+	id: "8bc26606b4781ecd9e32233bc42dbac16ee0f0ff8fafa2c3f66ef4e27fec1796",
+	name: "scanSwing",
+	filename: "src/lib/market.functions.ts"
+}, (opts) => scanSwing.__executeServer(opts));
+var scanSwing = createServerFn({ method: "POST" }).validator((data) => ({ capital: Math.min(5e7, Math.max(1e4, Number(data?.capital) || 5e5)) })).handler(scanSwing_createServerFn_handler, async ({ data }) => loadSwingScan(data.capital));
 //#endregion
-export { getMarket_createServerFn_handler };
+export { getMarket_createServerFn_handler, scanSwing_createServerFn_handler };
